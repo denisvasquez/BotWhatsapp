@@ -1,0 +1,6 @@
+.wwebjs_cache
+node_modules
+src/qr/qr.png
+tokens
+
+.env
