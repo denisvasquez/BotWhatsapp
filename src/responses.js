@@ -29,6 +29,7 @@ Si deseas, puedes ir al menu principal escribiendo "Menú".`,
 - Horarios
 - Precio
 - Disponibilidad`,
+    sessionExpired: `El tiempo de tu sesión ha expirado. Puedes enviar un mensaje cuando quieras para iniciar una nueva sesión de atención al cliente.`,
 
     fallback: `No entendí tu mensaje. Puedes escribir:
 - Ubicaciones

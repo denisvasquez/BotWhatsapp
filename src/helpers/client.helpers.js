@@ -14,7 +14,7 @@ export const replyMessage = async (msg, intent) => {
 
         case 'priceAvailability':
             await msg.reply(RESPONSES.priceAvailability);
-            const numberId = msg.from.split('@')[0];
+            const numberId = msg.from;
             await updateAskingProduct(numberId, 1);
             break;
 
@@ -69,9 +69,9 @@ export const deactivateSession = async (numberId) => {
             'UPDATE Numbers SET active_session = 0 WHERE number_id = ?',
             [numberId]
         );
-        // first_message, asking_product, saving_date reset to 0
+        // first_message, asking_product reset to 0
         await pool.query(
-            'UPDATE Numbers SET first_message = 0, asking_product = 0, saving_date = 0 WHERE number_id = ?',
+            'UPDATE Numbers SET first_message = 0, asking_product = 0 WHERE number_id = ?',
             [numberId]
         );
         return result;
@@ -134,3 +134,40 @@ export const findProductByName = async (productName) => {
         throw error;
     }
 };
+
+export const validateSessions = async (client) => {
+    try {
+        const [rows] = await pool.query(
+            'SELECT number_id, last_message FROM Numbers WHERE active_session = 1'
+        );
+        const now = new Date();
+        for (const row of rows) {
+            const lastMessageTime = new Date(row.last_message);
+
+            // validate if the last message was sent more than 5 minutes ago, if so, deactivate the session
+            const timeDifference = now.getTime() - lastMessageTime.getTime();
+            const time = 1000 * 60 * 5; // 5 minutes
+            // const time = 10 * 1000;
+
+            const isSessionExpired = timeDifference > time;
+
+            if (isSessionExpired) {
+                await deactivateSession(row.number_id);
+                await sendSessionExpiredMessage(client, row.number_id);
+            }
+
+        }
+    } catch (error) {
+        console.error('Error validating sessions:', error);
+        throw error;
+    }
+}
+
+const sendSessionExpiredMessage = async (client, numberId) => {
+    try {
+        await client.sendMessage(numberId, RESPONSES.sessionExpired);
+    } catch (error) {
+        console.error('Error sending session expired message:', error);
+        throw error;
+    }
+}

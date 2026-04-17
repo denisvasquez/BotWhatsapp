@@ -2,6 +2,7 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
+const cron = require('node-cron');
 
 const { detectIntent, normalizeText } = require('./helpers/message.helpers');
 const {
@@ -13,6 +14,7 @@ const {
     updateHasFirstMessage,
     findProductByName,
     updateAskingProduct,
+    validateSessions,
 } = require('./helpers/client.helpers');
 
 const RESPONSES = require('./responses');
@@ -87,6 +89,16 @@ client.on('auth_failure', (msg) => {
 
 client.on('ready', () => {
     console.log('Client is ready!');
+
+    // node chron to validate sessions every minute
+    cron.schedule('* * * * *', async () => {
+        try {
+            console.log('Validating sessions...');
+            await validateSessions(client);
+        } catch (error) {
+            console.error('Error validating sessions:', error);
+        }
+    });
 });
 
 client.on('message', async (msg) => {
@@ -97,7 +109,7 @@ client.on('message', async (msg) => {
         if (!msg.body) return;
         if (msg.fromMe) return;
 
-        const [numberId] = msg.from.split('@');
+        const numberId = msg.from;
 
         const clientInfo = await validateInfo(numberId);
 
@@ -119,7 +131,6 @@ client.on('message', async (msg) => {
             clientInfo &&
             clientInfo.active_session &&
             clientInfo.first_message &&
-            !clientInfo.saving_date &&
             !clientInfo.asking_product
         ) {
             const intent = detectIntent(msg.body);
@@ -130,7 +141,6 @@ client.on('message', async (msg) => {
             clientInfo &&
             clientInfo.active_session &&
             clientInfo.first_message &&
-            !clientInfo.saving_date &&
             clientInfo.asking_product
         ) {
             if (normalizeText(msg.body) === 'menu') {
