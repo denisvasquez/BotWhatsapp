@@ -103,9 +103,6 @@ client.on('ready', () => {
 
 client.on('message', async (msg) => {
     try {
-        if (process.env.TEST_NUMBER && msg.from !== process.env.TEST_NUMBER)
-            return;
-
         if (!msg.body) return;
         if (msg.fromMe) return;
 
